@@ -1,0 +1,414 @@
+---
+output: 
+  pdf_document:
+    keep_tex: yes
+    fig_caption: yes
+    number_sections: yes
+geometry: margin=2.54cm
+title: "Exploration of 2016-2017 CITES Poaching Database"
+subtitle: "https://github.com/emilyrwood/CITES_Poaching_Wood"
+author: "Emily Wood"
+fontsize: 12pt
+mainfont: Times New Roman
+
+---
+
+\newpage
+\tableofcontents 
+\newpage
+\listoftables 
+\newpage
+\listoffigures 
+\newpage
+
+```{r setup, include=FALSE}
+#This code chunk will tidy your knit PDF files, wrapping long code lines
+#For it to work, the "formatR" package needs to be installed
+
+#install.packages('formatR')
+
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+```
+
+```{r, include=FALSE}
+# Set your working directory
+
+getwd()
+
+# Load your packages
+
+library('formatR')
+library(tidyverse)
+library(agricolae)
+library(ggplot2)
+library(lubridate)
+library(rworldmap)
+
+
+# Set your ggplot theme
+
+mynewtheme <- theme_grey(base_size = 12) +
+  theme(axis.text = element_text(color = "Dark Green"), 
+        legend.position = "top")
+
+theme_set(mynewtheme)
+
+# Load your datasets
+
+CITESPoaching2016 <- read_csv("/home/guest/EDA_2022/EDA-Fall2022/Project/comptab_2018-01-29 16_00_comma_separated.csv")
+
+colnames(CITESPoaching2016)
+```
+
+
+```{r, include=FALSE}
+#Processing 
+#Goal:  data cleaning, integration, transformation, and reduction
+
+
+# Replace codes with labels for 'Purpose" column. 
+
+CITESPoaching2016$Purpose <- ifelse (CITESPoaching2016$Purpose=="B", "Breeding",
+                             ifelse ( CITESPoaching2016$Purpose=="E", "Educational",
+                             ifelse ( CITESPoaching2016$Purpose=="G", "Garden",
+                             ifelse ( CITESPoaching2016$Purpose=="H", "Hunting",
+                             ifelse ( CITESPoaching2016$Purpose=="L", "Law",
+                             ifelse ( CITESPoaching2016$Purpose=="M", "Medical",
+                             ifelse ( CITESPoaching2016$Purpose=="R", "Reintroduction",
+                             ifelse ( CITESPoaching2016$Purpose=="P", "Personal",
+                             ifelse ( CITESPoaching2016$Purpose=="Q", "Circus",
+                             ifelse ( CITESPoaching2016$Purpose=="S", "Scientific",
+                             ifelse ( CITESPoaching2016$Purpose=="T", "Commercial",
+                             ifelse ( CITESPoaching2016$Purpose=="Z", "Zoo",
+                             "Unknown"))))))))))))
+
+#rename some of the columns
+
+colnames(CITESPoaching2016)[which(names(CITESPoaching2016) == "Importer reported quantity")] <- "Importer_reported_quantity"
+
+colnames(CITESPoaching2016)[which(names(CITESPoaching2016) == "Exporter reported quantity")] <- "Exporter_reported_quantity"
+
+colnames(CITESPoaching2016)[which(names(CITESPoaching2016) == "App.")] <- "Appendix"
+
+```
+
+```{r}
+#wrangling 
+#Goal: cleaning the raw dataset into a format compatible
+
+CITESPoaching2016$Reported_quantity <- CITESPoaching2016$Importer_reported_quantity + CITESPoaching2016$Exporter_reported_quantity 
+
+#Limit dataset to poaching occurrence measured by count not by weight. 
+#I'm choosing count because the majority of cases are recorded in count not weight. 
+#Select relevant columns 
+
+CITESPoaching2016["Unit"][is.na(CITESPoaching2016["Unit"])] <- "Count"
+
+CITES2016_Processed<-CITESPoaching2016 %>%
+                    filter(Unit == "Count") %>%
+                    select(Year, Appendix, Class, Genus, 
+                           Importer, Exporter, Importer_reported_quantity, 
+                           Exporter_reported_quantity, Term, Purpose, Reported_quantity)  %>%
+                     group_by(Appendix)
+
+#Save the processed dataframe to processed folder 
+getwd()
+
+write.csv(CITES2016_Processed, row.names = FALSE, file = "./Data_Processed/CITES2016_Processed.csv")
+
+```
+
+
+```{r}
+
+Export.districution <- ggplot(CITESPoaching2016, aes(x=Exporter_reported_quantity ))+ geom_histogram(binwidth=50, colour="blue", fill="light blue", alpha=0.3)+ xlim(0,1500)+ylim(0,2500)+
+  labs(title="Export Distribution") 
+print(Export.districution)
+
+Import.distribution <- ggplot(CITESPoaching2016, aes(x=Importer_reported_quantity ))+ geom_histogram(binwidth=50, colour="dark green", fill="light green", alpha=0.3)+ xlim(0,1500)+ylim(0,2500)+
+  labs(title="Import Distribution") 
+print(Import.distribution)
+
+Graphnew <- 
+  ggplot(CITESPoaching2016, aes(x= Exporter_reported_quantity, y= Importer_reported_quantity,color = Appendix, alpha = .3))+
+  geom_point() +
+  xlim(0, 4000000) +
+  ylim(0, 4000000)
+
+print(Graphnew) 
+
+Appendix1 <- 
+  ggplot(subset(CITESPoaching2016, Appendix == "I"), aes(x= Exporter_reported_quantity, y= Importer_reported_quantity,color = Appendix, alpha = .3)) +
+  geom_point() 
+print(Appendix1)
+
+#Remove Null Values and combine Export and Import amounts into a total reported quantity column. Previous graphs should not contain the zeros.  
+
+CITESPoaching2016["Importer_reported_quantity"][is.na(CITESPoaching2016["Importer_reported_quantity"])] <- 0
+
+CITESPoaching2016["Exporter_reported_quantity"][is.na(CITESPoaching2016["Exporter_reported_quantity"])] <- 0
+
+
+#Visualizing countries with greater number of exports and imports
+#Found journal to visualize countries https://journal.r-project.org/archive/2011-1/RJournal_2011-1_South.pdf
+#install.packages('rworldmap')
+library(rworldmap)
+
+#Importer Countries
+CITES_Importer_withmap <- joinCountryData2Map( CITES2016_Processed
+                             ,joinCode = "ISO_A2"
+                             ,nameJoinColumn = "Importer")
+mapDevice() #create world map shaped window
+mapCountryData(CITES_Importer_withmap, nameColumnToPlot='Importer')
+
+
+
+Importerplot1 <- ggplot(CITES2016_Processed, aes(x=Importer))+ 
+                geom_bar(binwidth=50, colour="blue", fill="light blue", alpha=0.3)
+print(Importerplot1)
+
+#Difficult to interpret. Wrangle new dataset and create bar graph with only top 10 import countries:
+
+table(CITES2016_Processed$Importer)
+
+ImporterData <-CITES2016_Processed %>%
+                group_by(Importer)  %>%
+                summarise(Importer, count=n()) %>%
+                filter(Importer == "US" | Importer == "JP" | Importer == "DE" | Importer == "FR"
+                       | Importer == "HK" | Importer == "CH" | Importer == "CN" | Importer == "SG" | Importer == "AE" | Importer == "CA")
+
+
+Importerplot2 <- ggplot(ImporterData, aes(x=Importer))+ 
+  geom_bar(binwidth=50, colour="purple", fill="lavender", alpha=0.3)
+print(Importerplot2)
+  
+#Exporter Countries 
+CITES_Exporter_withmap <- joinCountryData2Map( CITES2016_Processed
+                                               ,joinCode = "ISO_A2"
+                                               ,nameJoinColumn = "Exporter")
+mapDevice() #create world map shaped window
+mapCountryData(CITES_Exporter_withmap, nameColumnToPlot='Exporter')
+
+Exporterplot1 <- ggplot(CITES2016_Processed, aes(x=Exporter))+ 
+  geom_bar(binwidth=50, colour="blue", fill="light blue", alpha=0.3)
+print(Exporterplot1)
+
+#Difficult to interpret. Wrangle new dataset and create bar graph with only top 10 export countries:
+
+table(CITES2016_Processed$Exporter)
+
+ExporterData <-CITES2016_Processed %>%
+  group_by(Exporter)  %>%
+  summarise(Exporter, count=n()) %>%
+  filter(Exporter == "NL" | Exporter == "ID" | Exporter == "IT" | Exporter == "US"
+         | Exporter == "FR" | Exporter == "DE" | Exporter == "EC" | Exporter == "AU" | Exporter == "TH"| Exporter== "ZA")
+
+
+Exporterplot2 <- ggplot(ExporterData, aes(x=Exporter))+ 
+  geom_bar(binwidth=50, colour="blue", fill="light blue", alpha=0.3)
+print(Exporterplot2)
+
+#Which Classes get poached most often? 
+
+Classplot1 <- ggplot(CITES2016_Processed, aes(x=Class ))+ 
+  geom_bar(aes(fill=Class))+
+  labs(title = "Classes of poaching occurances 2016",
+       x = "Class",
+       y = "Count") +
+  theme(legend.position = "none")+
+  coord_flip()
+
+print(Classplot1)
+
+
+#This has a lot of NAs perhaps they didn't record always the Class 
+#Faceted by appendix 
+
+Classplot2 <- ggplot(CITES2016_Processed, aes(x=Class ))+ 
+  geom_bar(aes(fill=Class))+
+  labs(title = "Classes of poaching occurances 2016",
+       x = "Class",
+       y = "Count") +
+  coord_flip()+
+  facet_grid(rows = "Appendix")+
+  theme(axis.text = element_text(size = 5))
+print(Classplot2)
+
+#create a facet dataset for Appendix I
+
+AppendixI_Facet <- CITES2016_Processed %>%
+                    filter(Appendix == "I")
+
+
+#A closer look at Mammalia 
+
+Mammalia_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Mammalia"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+      legend.key.size = unit(.2, 'cm'),
+      legend.key.height = unit(.2, 'cm'), 
+      legend.key.width = unit(.2, 'cm'),
+      legend.title = element_text(size=3), 
+      legend.text = element_text(size=3))
+
+print(Mammalia_terms)
+
+#A closer look at Aves 
+
+Aves_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Aves"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))
+
+print(Aves_terms)
+
+#A closer look at Reptilia
+
+Reptilia_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Reptilia"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))
+
+print(Reptilia_terms)
+
+#Why arent plants represented in Class? monocotyledons or dicotyledons not depicted so potentiall in NAs
+
+AppendixI_Facet["Class"][is.na(AppendixI_Facet["Class"])] <- "Not_recorded"
+ 
+NA_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Not_recorded"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))
+
+print(NA_terms)
+
+```
+
+
+# Rationale and Research Questions
+
+Does level of protection, class, term affect the amount exported/imported?
+
+What might the best set of predictors for Poaching?
+
+
+```{r}
+
+#Two way ANOVA
+
+
+#Linear modeling 
+
+#1.How Does Reported Poaching Quantity vary over Class and Term for only Appendix 1.
+
+Poaching.2way <- aov(data = AppendixI_Facet, Reported_quantity ~ Class + Term)
+summary(Poaching.2way)
+
+#P-value is small. Reject our null hypothesis that the mean across our groups is different. 
+#Not enough information to tell us which groups are differing
+
+Poaching.2way2lm <- lm(data = AppendixI_Facet, Reported_quantity ~ Class + Term)
+summary(Poaching.2way2lm)
+
+#means are different. Reject null 
+
+TukeyHSD(Poaching.2way)
+
+#check interaction between the variables 
+
+Poaching.2way3 <- aov(data = CITES2016_Processed, Reported_quantity ~ Class * Appendix)
+summary(Poaching.2way3)
+
+#Interaction is not significant between variables
+
+
+
+
+#2. How Does Reported Poaching Quantity vary over Class and Appendix for entire data
+
+Poaching.2way.test <- aov(data = CITES2016_Processed, Reported_quantity ~ Class + Appendix)
+summary(Poaching.2way.test)
+
+#P-value is small. Reject our null hypothesis that the mean across our groups is different. 
+#Not enough information to tell us which groups are differing
+
+Poaching.2way2lm.test <- lm(data = CITES2016_Processed, Reported_quantity ~ Class + Appendix)
+summary(Poaching.2way2lm.test)
+
+#means are different. Reject null 
+
+TukeyHSD(Poaching.2way.test)
+
+#check interaction between the variables 
+
+Poaching.2way3 <- aov(data = CITES2016_Processed, Reported_quantity ~ Class * Appendix)
+summary(Poaching.2way3)
+
+#significant because the pvalue is <2e-16 
+
+TukeyHSD(Poaching.2way3) 
+
+Poaching.interaction <- with(CITES2016_Processed, interaction(Class, Appendix))
+
+Poaching.anova.2way5 <- aov(data = CITES2016_Processed, Reported_quantity ~ Poaching.interaction)
+
+Poaching.groups <- HSD.test(Poaching.anova.2way5, "Poaching.interaction", group = TRUE)
+Poaching.groups
+
+Poaching.anova.plot <- ggplot(CITES2016_Processed, aes(y = Reported_quantity, x = Class, color = Appendix )) +
+  geom_boxplot()
+print(Poaching.anova.plot)
+
+```
+
+
+\newpage
+
+# Dataset Information
+
+
+
+\newpage
+
+# Exploratory Analysis 
+
+
+
+\newpage
+
+# Analysis
+
+
+
+## Question 1: <insert specific question here and add additional subsections for additional questions below, if needed>
+
+## Question 2: 
+
+
+
+
+\newpage
+
+# Summary and Conclusions
+
+
+\newpage
+
+# References
+<add references here if relevant, otherwise delete this section> 
