@@ -63,22 +63,91 @@ Exporterplot2 <- ggplot(ExporterData, aes(x=Exporter))+
 Exporterplot2
 
 #Which Classes get poached most often? 
+require(ggplot2)
 
-
-Classplot <- ggplot(CITES2016_Processed, aes(x=Class ))+ 
+Classplot1 <- ggplot(CITES2016_Processed, aes(x=Class ))+ 
   geom_bar(aes(fill=Class))+
   labs(title = "Classes of poaching occurances 2016",
        x = "Class",
        y = "Count") +
   coord_flip()
 
-Classplot 
+Classplot1 
+
 
 #This has a lot of NAs perhaps they didn't record always the Class 
+#Faceted by appendix 
 
-#Which Taxons get poached most often? 
+Classplot2 <- ggplot(CITES2016_Processed, aes(x=Class ))+ 
+  geom_bar(aes(fill=Class))+
+  labs(title = "Classes of poaching occurances 2016",
+       x = "Class",
+       y = "Count") +
+  coord_flip()+
+  facet_grid(rows = "Appendix")+
+  theme(axis.text = element_text(size = 5))
+Classplot2 
+
+#create a facet dataset for Appendix I
+
+AppendixI_Facet <- CITES2016_Processed %>%
+                    filter(Appendix == "I")
 
 
+#A closer look at Mammalia 
 
+Mammalia_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Mammalia"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+      legend.key.size = unit(.2, 'cm'),
+      legend.key.height = unit(.2, 'cm'), 
+      legend.key.width = unit(.2, 'cm'),
+      legend.title = element_text(size=3), 
+      legend.text = element_text(size=3))
 
+Mammalia_terms
 
+#A closer look at Aves 
+
+Aves_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Aves"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))
+
+Aves_terms
+
+#A closer look at Reptilia
+
+Reptilia_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Reptilia"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))
+
+Reptilia_terms
+
+#Why arent plants represented in Class? monocotyledons or dicotyledons not depicted so potentiall in NAs
+
+AppendixI_Facet["Class"][is.na(AppendixI_Facet["Class"])] <- "Not_recorded"
+ 
+NA_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Not_recorded"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))
+
+NA_terms
