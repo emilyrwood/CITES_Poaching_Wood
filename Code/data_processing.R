@@ -12,7 +12,7 @@ CITESPoaching2016$Purpose <- ifelse (CITESPoaching2016$Purpose=="B", "Breeding",
                              ifelse ( CITESPoaching2016$Purpose=="H", "Hunting",
                              ifelse ( CITESPoaching2016$Purpose=="L", "Law",
                              ifelse ( CITESPoaching2016$Purpose=="M", "Medical",
-                             ifelse ( CITESPoaching2016$Purpose=="R", "reintroduction to CITESPoaching2016",
+                             ifelse ( CITESPoaching2016$Purpose=="R", "Reintroduction",
                              ifelse ( CITESPoaching2016$Purpose=="P", "Personal",
                              ifelse ( CITESPoaching2016$Purpose=="Q", "Circus",
                              ifelse ( CITESPoaching2016$Purpose=="S", "Scientific",
@@ -20,6 +20,13 @@ CITESPoaching2016$Purpose <- ifelse (CITESPoaching2016$Purpose=="B", "Breeding",
                              ifelse ( CITESPoaching2016$Purpose=="Z", "Zoo",
                              "Unknown"))))))))))))
 
-#remove occurrences measured in grams 
+#rename some of the columns
+
+colnames(CITESPoaching2016)[which(names(CITESPoaching2016) == "Importer reported quantity")] <- "Importer_reported_quantity"
+
+colnames(CITESPoaching2016)[which(names(CITESPoaching2016) == "Exporter reported quantity")] <- "Exporter_reported_quantity"
+
+colnames(CITESPoaching2016)[which(names(CITESPoaching2016) == "App.")] <- "Appendix"
+
 
 
