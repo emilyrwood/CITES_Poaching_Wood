@@ -1,5 +1,9 @@
 #data exploration 
 
+#Basic 
+
+dim(CITES2016_Processed)
+str(CITES2016_Processed)
 
 #Visualizing countries with greater number of exports and imports
 #Found journal to visualize countries https://journal.r-project.org/archive/2011-1/RJournal_2011-1_South.pdf
@@ -57,6 +61,24 @@ ExporterData <-CITES2016_Processed %>%
 Exporterplot2 <- ggplot(ExporterData, aes(x=Exporter))+ 
   geom_bar(binwidth=50, colour="blue", fill="light blue", alpha=0.3)
 Exporterplot2
+
+#Which Classes get poached most often? 
+
+
+Classplot <- ggplot(CITES2016_Processed, aes(x=Class ))+ 
+  geom_bar(aes(fill=Class))+
+  labs(title = "Classes of poaching occurances 2016",
+       x = "Class",
+       y = "Count") +
+  coord_flip()
+
+Classplot 
+
+#This has a lot of NAs perhaps they didn't record always the Class 
+
+#Which Taxons get poached most often? 
+
+
 
 
 
