@@ -2,12 +2,12 @@
 title: "Exploration of 2016-2017 CITES Poaching Database"
 author: "Emily Wood"
 output:
-  html_document:
-    df_print: paged
   pdf_document:
     keep_tex: yes
     fig_caption: yes
     number_sections: yes
+  html_document:
+    df_print: paged
 subtitle: https://github.com/emilyrwood/CITES_Poaching_Wood
 geometry: margin=2.54cm
 fontsize: 12pt
@@ -18,8 +18,51 @@ mainfont: Times New Roman
 \tableofcontents 
 \newpage
 \listoftables 
+Table 1. Processed Data Frame 
+
+Table 2. Two Way ANOVA Summary
+
+Table 3. Two Way LM Summary 2
+
+Table 4. Two Way ANOVA comparing dependent variables 
+
+Table 5. Model 2 - Two Way ANOVA Summary
+
+Table 6. Model 2 - Two Way LM Summary 2
+
+Table 7. Model 2 - Two Way ANOVA Comparing Class and Appendix
+
 \newpage
 \listoffigures 
+Figure 1. Export Distribution
+
+Figure 2. Import Distribution
+
+Figure 3. Export and Import Quantity 
+
+Figure 4. Export and Import Quantity for Appendix I
+
+Figure 5. Importer World Map (In separate Document)
+
+Figure 6. Importer Country Plot Top 10
+
+Figure 7. Exporter World Map (In separate Document)
+
+Figure 8. Exporter Country Plot Top 10
+
+Figure 9. Classes of Poaching Occurrences 2016
+
+Figure 10. Classes of Poaching Occurrences per Appendix Level
+
+Figure 11. Mammalia Class Good Type
+
+Figure 12. Aves Class Good Type
+
+Figure 13. Reptilia Class Good Type
+
+Figure 14. NA Class Good Type
+
+Figure 15. Appendix and Class Compared to Reported Quantity 
 \newpage
 
 ```{r setup, include=FALSE}
@@ -29,6 +72,7 @@ mainfont: Times New Roman
 #install.packages('formatR')
 
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+
 ```
 
 ```{r, include=FALSE}
@@ -38,11 +82,14 @@ getwd()
 
 # Load your packages
 
+#install.packages("bookdown")
+
+library(bookdown)
 library('formatR')
 library(tidyverse)
 library(agricolae)
-library(ggplot2)
 library(lubridate)
+library(ggplot2)
 library(rworldmap)
 
 
@@ -62,11 +109,41 @@ colnames(CITESPoaching2016)
 ```
 
 
-```{r, include=FALSE}
+# Rationale and Research Questions
+
+Poaching remains a considerable threat to biodiversity across the planet. However, it often is overshadowed by other environmental issues in the policy realm. This is especially true for species that aren't charismatic mega-fauna. I'm undertaking this research project to better understand the trends in poaching over time and understand the regions where the most risk is occuring. This could help target poaching hotspots and help policy makers make more informed decisions when it comes to mitigating poaching risk for sesitive species. 
+
+**Main Questions:**
+
+Is there any correlation between class, term, appendix number and poaching amount?
+
+**Sub Questions:**
+
+What is the distribution of amounts found exported and imported for all species included in the database?
+
+Are there differences between Appendix Levels for the amount exported vs. imported?
+
+What are the most commonly poached classes between Appendix Levels?
+
+What are the top 3 Classes for species poached in Appendix I?
+
+What are the dominant good types (terms) for the top 3 classes poached in Appendix I?
+
+Which Counties are the biggest Importer and Exporters of CITES species?
+
+
+\newpage
+
+# Dataset Information
+
+The Convention on International Trade in Endangered Species of Wild Fauna and Flora (CITES) is an international agreement between governments. This group studies poaching trends and advises the UN on necessary action to mitigate this risk. This CITES dataset contains records on every international import or export conducted with species from the CITES monitoring list in 2016 and 2017. It contains columns identifying the species, the import and export countries, and the amount and characteristics of the goods being traded (which range from live animals to skins and cadavers). The 'Term' colum described the type of good the poached species takes when encountered. Examples for this column include live, trophies, tusks, ect. 
+
+Notably, this dataset has a column named, 'Appendix' which sorts the occurrences into three groups. Appendix I species are those whose poaching directly threatens them with extinction whose trade threatens them with extinction. There are around 1200 such species in this Appendix. Appendix II species are those who do not directly face extinction from poaching, but would experience detrimental impacts regardless. This group makes up the majority of the data set with around 21000 species.  Appendix III animals are considered controls because their export and import requires permits. There are around 170 in this dataset. I will be strongly focused on Appendix I in my analysis.
+
+
+```{r, include=TRUE}
 #Processing 
 #Goal:  data cleaning, integration, transformation, and reduction
-
-
 # Replace codes with labels for 'Purpose" column. 
 
 CITESPoaching2016$Purpose <- ifelse (CITESPoaching2016$Purpose=="B", "Breeding",
@@ -93,7 +170,7 @@ colnames(CITESPoaching2016)[which(names(CITESPoaching2016) == "App.")] <- "Appen
 
 ```
 
-```{r}
+```{r, include=TRUE}
 #wrangling 
 #Goal: cleaning the raw dataset into a format compatible
 
@@ -119,17 +196,37 @@ write.csv(CITES2016_Processed, row.names = FALSE, file = "./Data_Processed/CITES
 
 ```
 
+Wrangling the Dataset:
+
+To prepare this dataset I first replaced the Codes for the 'Purpose' column with text to match the other columns such as the 'Term' column. I then renamed certain columns to get rid of abbreviations and spaces. Next I set the NAs in both the importer and exporter quantity columns to 0 so that they could be combined into a total reported quantity column. After this column was created I noted that the Unit column combined individual occurrence counts and those measured by weight in grams and kilograms. After viewing the amounts of each type, I made the decision to remove occ-urrences measured in weight because there were significantly less when compared to those measured in counts. To do this I set The NAs in the Unit column to "Count" and filtered for it when finishing my processed dataframe. As part of this process I also selected the variables I needed which included Year, Appendix, Class, Genus, Importer, Exporter, Importer_reported_quantity, Exporter_reported_quantity, Term, Purpose, Reported_quantity. Last, I grouped the dataframe by Appendix number. Table 1 depicts the variables within my processed dataframe. 
+
+| Variables                  | Units        | Ranges                                   |
+|----------------------------|--------------|------------------------------------------|
+| Year                       |              | 2016-2017                                |
+| Appendix                   |              | I,II,III                                 |
+| Class                      |              | Actinopteri, Anthozoa, Aves,... Reptilia |
+| Genus                      |              | Alligator, Aloe, Alveopora, ...Ursus     |
+| Importer                   | Country Code | AD, AE, AU,... ZW                        |
+| Exporter                   | Country Code | AD, AE, AR,... ZZ                        |
+| Importer_reported_quantity | Count        | 1,2,3, ... 19524978                      |
+| Exporter_reported_quantity | Count        | 1,2,3, ... 21543618                      |
+| Term                       |              | baleen, bark, bodies, ... wood product   |
+| Purpose                    |              | Breeding, Circus, Commercial, ... Zoo    |
+| Reported Quantity          | Count        | 1, 2, 3, ... 21543639                    |
+Table 1. Processed Data Frame 
+
+\newpage
 
 
-```{r}
+```{r, include=TRUE}
 
 Export.districution <- ggplot(CITESPoaching2016, aes(x=Exporter_reported_quantity ))+ geom_histogram(binwidth=50, colour="blue", fill="light blue", alpha=0.3)+ xlim(0,1500)+ylim(0,2500)+
   labs(title="Export Distribution") 
-print(Export.districution)
+
 
 Import.distribution <- ggplot(CITESPoaching2016, aes(x=Importer_reported_quantity ))+ geom_histogram(binwidth=50, colour="dark green", fill="light green", alpha=0.3)+ xlim(0,1500)+ylim(0,2500)+
   labs(title="Import Distribution") 
-print(Import.distribution)
+
 
 Graphnew <- 
   ggplot(CITESPoaching2016, aes(x= Exporter_reported_quantity, y= Importer_reported_quantity,color = Appendix, alpha = .3))+
@@ -137,12 +234,11 @@ Graphnew <-
   xlim(0, 4000000) +
   ylim(0, 4000000)
 
-print(Graphnew) 
 
 Appendix1 <- 
   ggplot(subset(CITESPoaching2016, Appendix == "I"), aes(x= Exporter_reported_quantity, y= Importer_reported_quantity,color = Appendix, alpha = .3)) +
   geom_point() 
-print(Appendix1)
+
 
 #Remove Null Values and combine Export and Import amounts into a total reported quantity column. Previous graphs should not contain the zeros.  
 
@@ -167,11 +263,11 @@ mapCountryData(CITES_Importer_withmap, nameColumnToPlot='Importer')
 
 Importerplot1 <- ggplot(CITES2016_Processed, aes(x=Importer))+ 
                 geom_bar(binwidth=50, colour="blue", fill="light blue", alpha=0.3)
-print(Importerplot1)
+
 
 #Difficult to interpret. Wrangle new dataset and create bar graph with only top 10 import countries:
 
-table(CITES2016_Processed$Importer)
+#table(CITES2016_Processed$Importer)
 
 ImporterData <-CITES2016_Processed %>%
                 group_by(Importer)  %>%
@@ -182,7 +278,7 @@ ImporterData <-CITES2016_Processed %>%
 
 Importerplot2 <- ggplot(ImporterData, aes(x=Importer))+ 
   geom_bar(binwidth=50, colour="purple", fill="lavender", alpha=0.3)
-print(Importerplot2)
+
   
 #Exporter Countries 
 CITES_Exporter_withmap <- joinCountryData2Map( CITES2016_Processed
@@ -193,11 +289,11 @@ mapCountryData(CITES_Exporter_withmap, nameColumnToPlot='Exporter')
 
 Exporterplot1 <- ggplot(CITES2016_Processed, aes(x=Exporter))+ 
   geom_bar(binwidth=50, colour="blue", fill="light blue", alpha=0.3)
-print(Exporterplot1)
+
 
 #Difficult to interpret. Wrangle new dataset and create bar graph with only top 10 export countries:
 
-table(CITES2016_Processed$Exporter)
+#table(CITES2016_Processed$Exporter)
 
 ExporterData <-CITES2016_Processed %>%
   group_by(Exporter)  %>%
@@ -208,7 +304,7 @@ ExporterData <-CITES2016_Processed %>%
 
 Exporterplot2 <- ggplot(ExporterData, aes(x=Exporter))+ 
   geom_bar(binwidth=50, colour="blue", fill="light blue", alpha=0.3)
-print(Exporterplot2)
+
 
 #Which Classes get poached most often? 
 
@@ -220,7 +316,6 @@ Classplot1 <- ggplot(CITES2016_Processed, aes(x=Class ))+
   theme(legend.position = "none")+
   coord_flip()
 
-print(Classplot1)
 
 
 #This has a lot of NAs perhaps they didn't record always the Class 
@@ -234,7 +329,6 @@ Classplot2 <- ggplot(CITES2016_Processed, aes(x=Class ))+
   coord_flip()+
   facet_grid(rows = "Appendix")+
   theme(axis.text = element_text(size = 5))
-print(Classplot2)
 
 #create a facet dataset for Appendix I
 
@@ -254,7 +348,6 @@ Mammalia_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Mammalia"), aes(x =
       legend.title = element_text(size=3), 
       legend.text = element_text(size=3))
 
-print(Mammalia_terms)
 
 #A closer look at Aves 
 
@@ -268,7 +361,6 @@ Aves_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Aves"), aes(x = Term)) 
         legend.title = element_text(size=3), 
         legend.text = element_text(size=3))
 
-print(Aves_terms)
 
 #A closer look at Reptilia
 
@@ -282,7 +374,6 @@ Reptilia_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Reptilia"), aes(x =
         legend.title = element_text(size=3), 
         legend.text = element_text(size=3))
 
-print(Reptilia_terms)
 
 #Why arent plants represented in Class? monocotyledons or dicotyledons not depicted so potentiall in NAs
 
@@ -298,74 +389,346 @@ NA_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Not_recorded"), aes(x = T
         legend.title = element_text(size=3), 
         legend.text = element_text(size=3))
 
-print(NA_terms)
 
 ```
 
+# Exploratory Analysis 
 
-# Rationale and Research Questions
+First I explored the distribution of Import and export quantity. Figure 1 and Figure 2 depict these distributions. The majority of occurrence fall in the sigle digits. Frown these distributions you can also see subtle jumps around whole numbers. From this, I beleive that some rounding has occured, especially with counts around 500 and 100. 
 
-Poaching remains a considerable threat to biodiversity across the planet. However, it often is overshadowed by other environmental issues in the policy realm. This is especially true for species that aren't charismatic mega-fauna. I'm undertaking this research project to better understand the trends in poaching over time and understand the regions where the most risk is occuring. This could help target poaching hotspots and help policy makers make more informed decisions when it comes to mitigating poaching risk for sesitive species. 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-Main Questions:
+Export.distribution <- ggplot(CITESPoaching2016, aes(x=Exporter_reported_quantity ))+ geom_histogram(binwidth=50, colour="blue", fill="light blue", alpha=0.3)+ xlim(0,1500)+ylim(0,2500)+
+  labs(title="Export Distribution") 
+print(Export.distribution)
 
-Is there any correlation between class, term, appendix number and poaching amount?
+```
 
-Sub Questions:
+Figure 1. Export Distribution
 
-What is the distribetion of amounts found exported and imported for all species included in the database?
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-Are there differences between Appendix Levels for the amount exported vs. imported?
+Import.distribution <- ggplot(CITESPoaching2016, aes(x=Importer_reported_quantity ))+ geom_histogram(binwidth=50, colour="dark green", fill="light green", alpha=0.3)+ xlim(0,1500)+ylim(0,2500)+
+  labs(title="Import Distribution") 
+print(Import.distribution)
 
-What are the most commonly poached classes between Appendix Levels?
+```
 
-What are the top 3 Classes for species poached in Appendix I?
+Figure 2. Import Distribution
 
-What are the dominant good types (terms) for the top 3 classes poached in Appendix I?
+Next I visualized export quantity and compared to import quantity. I broke this up by appendix levels which is visualized in Figure 3. Unfortunately, Appendix I was not easily viewing when combines with Appendix II and Appendix III so I also visualized that separately in Figure 4.
 
-Which Counties are the biggest Importer and Exporters of CITES species?
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Graphnew <- 
+  ggplot(CITESPoaching2016, aes(x= Exporter_reported_quantity, y= Importer_reported_quantity,color = Appendix, alpha = .3))+
+  geom_point() +
+  xlim(0, 4000000) +
+  ylim(0, 4000000)+
+  labs(title="Import and Export Quantity") 
+
+print(Graphnew) 
+
+```
+
+Figure 3. Export and Import Quantity 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+Appendix1 <- 
+  ggplot(subset(CITESPoaching2016, Appendix == "I"), aes(x= Exporter_reported_quantity, y= Importer_reported_quantity,color = Appendix, alpha = .3)) +
+  geom_point() +
+  labs(title="Appendix I, Import and Export Quantity") 
+print(Appendix1)
+
+```
+
+Figure 4. Export and Import Quantity for Appendix I
+
+Next, I visualized the Countries with the most imports and Exports. The countries with the higher Imports are visualized in Figure 5. For clarity I also plotted the top ten countries with the most Imports in Figure 6. I did the same process to visualize exports in Figure 7 and Figure 8. 
+
+Interestingly, we see that the top importers and exporters are different. The top importer in terms of count is the United stated and the top exporter in terms of count is the Netherlands. Its important to note that this could be do to the way they screen their importans and exports. As there is no accompanied standardization protocol its hard to say how accurate this is. 
 
 
-```{r}
-#Two way ANOVA
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+CITES_Importer_withmap <- joinCountryData2Map( CITES2016_Processed
+                             ,joinCode = "ISO_A2"
+                             ,nameJoinColumn = "Importer")
+mapDevice() #create world map shaped window
+mapCountryData(CITES_Importer_withmap, nameColumnToPlot='Importer')
 
-#Linear modeling 
+```
 
-#1.How Does Reported Poaching Quantity vary over Class and Term for only Appendix 1.
+Figure 5. Importer World Map (In Separate Document)
 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+Importerplot2 <- ggplot(ImporterData, aes(x=Importer))+ 
+  geom_bar(binwidth=50, colour="purple", fill="lavender", alpha=0.3)+
+  labs(title="Top 10 Import Country Occurance") 
+print(Importerplot2)
+
+```
+
+Figure 6. Importer Country Plot Top 10
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+CITES_Exporter_withmap <- joinCountryData2Map( CITES2016_Processed
+                                               ,joinCode = "ISO_A2"
+                                               ,nameJoinColumn = "Exporter")
+mapDevice() #create world map shaped window
+mapCountryData(CITES_Exporter_withmap, nameColumnToPlot='Exporter')
+
+```
+
+Figure 7. Exporter World Map (In Separate Document)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+Exporterplot2 <- ggplot(ExporterData, aes(x=Exporter))+ 
+  geom_bar(binwidth=50, colour="blue", fill="light blue", alpha=0.3)+
+  labs(title="Top 10 Export Country Occurance") 
+print(Exporterplot2)
+
+```
+
+Figure 8. Exporter Country Plot Top 10
+
+
+Next, I explored the 'Class' column. I wanted to know which taxonomic classes were poached most often. Figure 9 depicts the count for Classes for the entire dataset. Ass Appendix I contains the subset of species threatened with extinction by poaching I decided to subset this visually in Figure 10. From this graph I noted that the top three classes were Mamilia, Aves, and Reptilia. This was interesting to me as plants are high risk for poaching because of their transportability. It is then That I noticed that neither plant Class was represented in this data set so I decided to explore the NA Class. 
+
+Figure 11. shows the breakdown of the Mamilia class by type of good for Appendix I species. From this information we see that the most common good type is ivory carvings followed by live animals. In figure 12 we see the same breakdown for Appendix I Aves. In this figure, we see that the trade for this class is dominated by live animals. Figure 13 depicts the breakdown for Reptilia in Appendix I. From this graph we see the most commonly traded good is small leather products followed by skins. To explore my hunch that Appendix I plants were hidden in the NAs, I assigned them a variable and explored the good type breakdown in Figure 14. Here, I saw that the NAs were dominated by live animals followed by Seeds. From this exploration it is clear that the plant class is embedded in the Class NAs, but there is not enough information to conclusively assign them to the plant Classes. More investigation of the dataframe is needed and this is outside the scope of my project. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+Classplot1 <- ggplot(CITES2016_Processed, aes(x=Class ))+ 
+  geom_bar(aes(fill=Class))+
+  labs(title = "Classes of Poaching Occurances 2016",
+       x = "Class",
+       y = "Count") +
+  theme(legend.position = "none")+
+  coord_flip()
+  
+print(Classplot1)
+
+```
+
+Figure 9. Classes of Poaching Occurrences 2016
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+#This has a lot of NAs perhaps they didn't record always the Class 
+#Faceted by appendix 
+
+Classplot2 <- ggplot(CITES2016_Processed, aes(x=Class ))+ 
+  geom_bar(aes(fill=Class))+
+  labs(title = "Classes of Poaching Occurances by Appendix Level",
+       x = "Class",
+       y = "Count") +
+  coord_flip()+
+  facet_grid(rows = "Appendix")+
+  theme(axis.text = element_text(size = 5))
+print(Classplot2)
+
+```
+
+Figure 10. Classes of Poaching Occurrences per Appendix Level
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+Mammalia_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Mammalia"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+      legend.key.size = unit(.2, 'cm'),
+      legend.key.height = unit(.2, 'cm'), 
+      legend.key.width = unit(.2, 'cm'),
+      legend.title = element_text(size=3), 
+      legend.text = element_text(size=3))+
+  labs(title = "Mammalia Class Good Type")
+
+print(Mammalia_terms)
+
+
+```
+
+Figure 11. Mammalia Class Good Type
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+Aves_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Aves"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))+
+  labs(title = "Aves Class Good Type")
+
+print(Aves_terms)
+
+```
+
+Figure 12. Aves Class Good Type
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Reptilia_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Reptilia"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))+
+  labs(title = "Reptilia Class Good Type")
+
+print(Reptilia_terms)
+
+```
+
+Figure 13. Reptilia Class Good Type
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+#Why arent plants represented in Class? monocotyledons or dicotyledons not depicted so potentiall in NAs
+ 
+NA_terms <- ggplot(subset(AppendixI_Facet, Class %in% "Not_recorded"), aes(x = Term)) + 
+  geom_bar(aes(fill= Term)) +
+  coord_flip() +
+  theme(axis.text = element_text(size = 5),
+        legend.key.size = unit(.2, 'cm'),
+        legend.key.height = unit(.2, 'cm'), 
+        legend.key.width = unit(.2, 'cm'),
+        legend.title = element_text(size=3), 
+        legend.text = element_text(size=3))+
+  labs(title = "NA Class Good Type")
+
+print(NA_terms)
+```
+
+Figure 14. NA Class Good Type
+
+\newpage
+
+# Analysis
+
+## Question 1: Is there any correlation between class, term, appendix number and total poaching amount?
+
+For my main analysis, I wanted to know if the mean of poaching amount changes according to levels of Class, Term, and Appendix. These last three variables are categorical. Because of this, I decided to use two-way ANOVAs to understand the relationship between these variables. I also wanted to see if the combination of these variables affected the mean of total poaching amount. 
+
+1. For my first model I wanted to know how Poaching Quanitity is influenced by Class and Term only within the Appendix I subset.
+
+H: There is no difference in the means of Class in Appendix I
+H: There is no difference in means of Term in Appendix I
+H: There is no interaction between Class and Term in Appendix I
+
+Null Hypothesis: The alternative hypothesis for cases 1 and 2 is: the means are not equal.
+
+Null Hypothesis: The alternative hypothesis for case 3 is: there is an interaction between Class and Term for Appendix I
+
+The summary of our two-way ANOVA (Table. 2) shows us a statistically significant p-value for Class (DF= 7, P-value = <2e-16). This means that for Class we reject the null hypothesis that the mean across our groups is different. The p-value for term is also statistically significant (DF= 52, P-value = <0.256). In this case we also reject the null hypothesis. This model only gives us part of the picture so I also used a two-way LM. 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 Poaching.2way <- aov(data = AppendixI_Facet, Reported_quantity ~ Class + Term)
 summary(Poaching.2way)
+```
+Table 2. Two Way ANOVA Summary
+
+This model gives us a detailed summary of the groups within class which are significant. The results can be viewed below in Table 3.The results of this model show high chance of variability (Residual standard error: 4170 on 4132 degrees of freedom). This means that the actual recorded count can deviate from the true regression line by approximately 4170 occurrences. We also see that our multiple R squared is low (Multiple R-squared:  0.06678) and therefore our model does not explain the variance recorded quantity well. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Poaching.2way2lm <- lm(data = AppendixI_Facet, Reported_quantity ~ Class + Term)
+summary(Poaching.2way2lm)
+```
+Table 3. Two Way LM Summary 2
+
+The Last thing I did for this model was check to see if there was a relationship between the dependant variables. The results (Table 4) show a no significant interaction between the variables (P-Value = 0.954). 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+Poaching.2way3 <- aov(data = AppendixI_Facet, Reported_quantity ~ Class * Term)
+summary(Poaching.2way3)
+
+```
+Table 4. Two Way ANOVA comparing Class and Term
+
+```{r}
+
+Poaching.2way <- aov(data = AppendixI_Facet, Reported_quantity ~ Class + Term)
 
 #P-value is small. Reject our null hypothesis that the mean across our groups is different. 
 #Not enough information to tell us which groups are differing
 
 Poaching.2way2lm <- lm(data = AppendixI_Facet, Reported_quantity ~ Class + Term)
-summary(Poaching.2way2lm)
 
 #means are different. Reject null 
 
-TukeyHSD(Poaching.2way)
+#TukeyHSD(Poaching.2way)
 
 #check interaction between the variables 
 
-Poaching.2way3 <- aov(data = CITES2016_Processed, Reported_quantity ~ Class * Appendix)
-summary(Poaching.2way3)
+Poaching.2way3 <- aov(data = AppendixI_Facet, Reported_quantity ~ Class * Term)
 
 #Interaction is not significant between variables
+```
 
+2. For my second model I wanted to know how Poaching Quantity is influenced by Class and Appendix for the entire dataframe
 
+H: There is no difference in the means of Class 
+H: There is no difference in means of Appendix
+H: There is no interaction between Class and Appendix
 
+Null Hypothesis: The alternative hypothesis for cases 1 and 2 is: the means are not equal.
 
+Null Hypothesis: The alternative hypothesis for case 3 is: there is an interaction between Class and Appendix
+
+The summary of our two-way ANOVA (Table. 5) shows us a statistically significant p-value for Class (DF= 7, P-value = <2e-16). This means that for Class we reject the null hypothesis that the mean across our groups is different. The p-value for Appendix is also statistically significant (DF= 3, P-value = <2e-16). In this case we can also reject the null hypothesis. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Poaching.2way.test <- aov(data = CITES2016_Processed, Reported_quantity ~ Class + Appendix)
+summary(Poaching.2way.test)
+```
+Table 5. Model 2 - Two Way ANOVA Summary
+
+This model gives us a detailed summary of the groups within class which are significant. The results can be viewed below in Table 6.The results of this model show high chance of variability (Residual standard error: 17690 on 42772 degrees of freedom). This means that the actual recorded count can deviate from the true regression line by approximately 17690 occurrences. Again, we also see that our multiple R squared is low (Multiple R-squared:  0.01144) and therefore our model does not explain all the variance in reported quantity. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Poaching.2way2lm.test <- lm(data = CITES2016_Processed, Reported_quantity ~ Class + Appendix)
+summary(Poaching.2way2lm.test)
+```
+Table 6. Model 2 - Two Way LM Summary 2
+
+I decided to check the interaction between Class and Appendix using a new ANOVA model. In this case, the P-value was statistically significant (DF= 16, P-value = <2e-16). Because of this we accept the Null hypothesis that there is an interaction between Class and Appendix. This relationship between Class and Appendix when compared to reported quantity can be visualized in Figure 15. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Poaching.2way3 <- aov(data = CITES2016_Processed, Reported_quantity ~ Class * Appendix)
+summary(Poaching.2way3)
+```
+Table 7. Model 2 - Two Way ANOVA Comparing Class and Appendix
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Poaching.anova.plot <- ggplot(CITES2016_Processed, aes(y = Reported_quantity, x = Class, color = Appendix )) +
+  geom_boxplot()+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title="Appendix and Class Compared to Reported Quantity") 
+print(Poaching.anova.plot)
+```
+Figure 15. Appendix and Class Compared to Reported Quantity 
+
+```{r}
 #2. How Does Reported Poaching Quantity vary over Class and Appendix for entire data
 
 Poaching.2way.test <- aov(data = CITES2016_Processed, Reported_quantity ~ Class + Appendix)
-summary(Poaching.2way.test)
 
 #P-value is small. Reject our null hypothesis that the mean across our groups is different. 
 #Not enough information to tell us which groups are differing
 
 Poaching.2way2lm.test <- lm(data = CITES2016_Processed, Reported_quantity ~ Class + Appendix)
-summary(Poaching.2way2lm.test)
 
 #means are different. Reject null 
 
@@ -374,81 +737,33 @@ TukeyHSD(Poaching.2way.test)
 #check interaction between the variables 
 
 Poaching.2way3 <- aov(data = CITES2016_Processed, Reported_quantity ~ Class * Appendix)
-summary(Poaching.2way3)
 
 #significant because the pvalue is <2e-16 
 
-TukeyHSD(Poaching.2way3) 
+#TukeyHSD(Poaching.2way3) 
 
 Poaching.interaction <- with(CITES2016_Processed, interaction(Class, Appendix))
 
 Poaching.anova.2way5 <- aov(data = CITES2016_Processed, Reported_quantity ~ Poaching.interaction)
 
 Poaching.groups <- HSD.test(Poaching.anova.2way5, "Poaching.interaction", group = TRUE)
-Poaching.groups
 
 Poaching.anova.plot <- ggplot(CITES2016_Processed, aes(y = Reported_quantity, x = Class, color = Appendix )) +
-  geom_boxplot()
-print(Poaching.anova.plot)
+  geom_boxplot()+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title="Appendix and Class compared to Reported Quantity") 
 
 ```
 
 
 \newpage
 
-# Dataset Information
-
-The Convention on International Trade in Endangered Species of Wild Fauna and Flora (CITES) is an international agreement between governments. This group studies poaching trends and advises the UN on necessary action to mitigate this risk. This CITES dataset contains records on every international import or export conducted with species from the CITES monitoring list in 2016 and 2017. It contains columns identifying the species, the import and export countries, and the amount and characteristics of the goods being traded (which range from live animals to skins and cadavers). The 'Term' colum described the type of good the poached species takes when encountered. Examples for this column include live, trophies, tusks, ect. 
-
-Notably, this dataset has a column named, 'Appendix' which sorts the occurrences into three groups. Appendix I species are those whose poaching directly threatens them with extinction whose trade threatens them with extinction. There are around 1200 such species in this Appendix. Appendix II species are those who do not directly face extinction from poaching, but would experience detrimental impacts regardless. This group makes up the majority of the data set with around 21000 species.  Appendix III animals are considered controls because their export and import requires permits. There are around 170 in this dataset. I will be strongly focused on Appendix I in my analysis.
-
-Wrangling the Dataset:
-
-To prepare this dataset I first replaced the Codes for the 'Purpose' column with text to match the other columns such as 'Term'. I then renamed the columns to get rid of abbreviations and spaces. Next I set the NAs in both the importer and exporter quantity columns to 0 so that they could be combined into a total reported quantity column. After this column was created I noted that the Unit column was separate and combined individual occurrence counts and weight in grams and kilograms. After viewing the amounts of each type of character, I made the decision to remove occurrences measured in weight because there were significantly less when compared to those measured in counts. To do this I set The NAs in the Unit column to "Count" and filtered for it when finishing my processed dataframe. As part of this process I also selected the variables I needed which included Year, Appendix, Class, Genus, Importer, Exporter, Importer_reported_quantity, Exporter_reported_quantity, Term, Purpose, Reported_quantity, and I grouped the dataframe by Appendix number. 
-
-
-| Variables                  | Units        | Ranges                                   |
-|----------------------------|--------------|------------------------------------------|
-| Year                       |              | 2016-2017                                |
-| Appendix                   |              | I,II,III                                 |
-| Class                      |              | Actinopteri, Anthozoa, Aves,... Reptilia |
-| Genus                      |              | Alligator, Aloe, Alveopora, ...Ursus     |
-| Importer                   | Country Code | AD, AE, AU,... ZW                        |
-| Exporter                   | Country Code | AD, AE, AR,... ZZ                        |
-| Importer_reported_quantity | Count        | 1,2,3, ... 19524978                      |
-| Exporter_reported_quantity | Count        | 1,2,3, ... 21543618                      |
-| Term                       |              | baleen, bark, bodies, ... wood product   |
-| Purpose                    |              | Breeding, Circus, Commercial, ... Zoo    |
-| Reported Quantity          | Count        | 1, 2, 3, ... 21543639                    |
-
-               
-
-\newpage
-
-# Exploratory Analysis 
-
-
-
-
-\newpage
-
-# Analysis
-
-
-
-## Question 1: <insert specific question here and add additional subsections for additional questions below, if needed>
-
-## Question 2: 
-
-
-
-
-\newpage
-
 # Summary and Conclusions
 
+I found that there was a correlation between Class, Term, APpendix and Reported Quantity. However, I also found that neither of my models was explaining the variability in our response variable well. More data analysis is needed to find what else is missing from these models to better explain this variance. 
 
-\newpage
+I was also able to visually compare export and import quantity, as well as identify and highlight the countries with the highest import and export amounts. This was accomplished through a bar graphs and a maps located in an additional document. 
 
-# References
-<add references here if relevant, otherwise delete this section> 
+Another goal of mine was to explore Appendix I specifically. This Appendix contains species in which poaching can directly lead to extinction. I was able to identify the top three classes in the Appendix and explore the good types that are most commonly traded. I also had time to explore the case of missing plant classes and identified them within the NAs. 
+
+In conclusion, I have increased the understanding of the CITES 2016 Poaching dataframe. This information can be used to inform policies surrounding poaching, wildlife trafficking and trade internationally. 
