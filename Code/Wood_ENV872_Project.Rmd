@@ -1,16 +1,17 @@
 ---
-output: 
+title: "Exploration of 2016-2017 CITES Poaching Database"
+author: "Emily Wood"
+output:
+  html_document:
+    df_print: paged
   pdf_document:
     keep_tex: yes
     fig_caption: yes
     number_sections: yes
+subtitle: https://github.com/emilyrwood/CITES_Poaching_Wood
 geometry: margin=2.54cm
-title: "Exploration of 2016-2017 CITES Poaching Database"
-subtitle: "https://github.com/emilyrwood/CITES_Poaching_Wood"
-author: "Emily Wood"
 fontsize: 12pt
 mainfont: Times New Roman
-
 ---
 
 \newpage
@@ -117,6 +118,7 @@ getwd()
 write.csv(CITES2016_Processed, row.names = FALSE, file = "./Data_Processed/CITES2016_Processed.csv")
 
 ```
+
 
 
 ```{r}
@@ -303,15 +305,29 @@ print(NA_terms)
 
 # Rationale and Research Questions
 
-Does level of protection, class, term affect the amount exported/imported?
+Poaching remains a considerable threat to biodiversity across the planet. However, it often is overshadowed by other environmental issues in the policy realm. This is especially true for species that aren't charismatic mega-fauna. I'm undertaking this research project to better understand the trends in poaching over time and understand the regions where the most risk is occuring. This could help target poaching hotspots and help policy makers make more informed decisions when it comes to mitigating poaching risk for sesitive species. 
 
-What might the best set of predictors for Poaching?
+Main Questions:
+
+Is there any correlation between class, term, appendix number and poaching amount?
+
+Sub Questions:
+
+What is the distribetion of amounts found exported and imported for all species included in the database?
+
+Are there differences between Appendix Levels for the amount exported vs. imported?
+
+What are the most commonly poached classes between Appendix Levels?
+
+What are the top 3 Classes for species poached in Appendix I?
+
+What are the dominant good types (terms) for the top 3 classes poached in Appendix I?
+
+Which Counties are the biggest Importer and Exporters of CITES species?
 
 
 ```{r}
-
 #Two way ANOVA
-
 
 #Linear modeling 
 
@@ -382,11 +398,35 @@ print(Poaching.anova.plot)
 
 # Dataset Information
 
+The Convention on International Trade in Endangered Species of Wild Fauna and Flora (CITES) is an international agreement between governments. This group studies poaching trends and advises the UN on necessary action to mitigate this risk. This CITES dataset contains records on every international import or export conducted with species from the CITES monitoring list in 2016 and 2017. It contains columns identifying the species, the import and export countries, and the amount and characteristics of the goods being traded (which range from live animals to skins and cadavers). The 'Term' colum described the type of good the poached species takes when encountered. Examples for this column include live, trophies, tusks, ect. 
 
+Notably, this dataset has a column named, 'Appendix' which sorts the occurrences into three groups. Appendix I species are those whose poaching directly threatens them with extinction whose trade threatens them with extinction. There are around 1200 such species in this Appendix. Appendix II species are those who do not directly face extinction from poaching, but would experience detrimental impacts regardless. This group makes up the majority of the data set with around 21000 species.  Appendix III animals are considered controls because their export and import requires permits. There are around 170 in this dataset. I will be strongly focused on Appendix I in my analysis.
+
+Wrangling the Dataset:
+
+To prepare this dataset I first replaced the Codes for the 'Purpose' column with text to match the other columns such as 'Term'. I then renamed the columns to get rid of abbreviations and spaces. Next I set the NAs in both the importer and exporter quantity columns to 0 so that they could be combined into a total reported quantity column. After this column was created I noted that the Unit column was separate and combined individual occurrence counts and weight in grams and kilograms. After viewing the amounts of each type of character, I made the decision to remove occurrences measured in weight because there were significantly less when compared to those measured in counts. To do this I set The NAs in the Unit column to "Count" and filtered for it when finishing my processed dataframe. As part of this process I also selected the variables I needed which included Year, Appendix, Class, Genus, Importer, Exporter, Importer_reported_quantity, Exporter_reported_quantity, Term, Purpose, Reported_quantity, and I grouped the dataframe by Appendix number. 
+
+
+| Variables                  | Units        | Ranges                                   |
+|----------------------------|--------------|------------------------------------------|
+| Year                       |              | 2016-2017                                |
+| Appendix                   |              | I,II,III                                 |
+| Class                      |              | Actinopteri, Anthozoa, Aves,... Reptilia |
+| Genus                      |              | Alligator, Aloe, Alveopora, ...Ursus     |
+| Importer                   | Country Code | AD, AE, AU,... ZW                        |
+| Exporter                   | Country Code | AD, AE, AR,... ZZ                        |
+| Importer_reported_quantity | Count        | 1,2,3, ... 19524978                      |
+| Exporter_reported_quantity | Count        | 1,2,3, ... 21543618                      |
+| Term                       |              | baleen, bark, bodies, ... wood product   |
+| Purpose                    |              | Breeding, Circus, Commercial, ... Zoo    |
+| Reported Quantity          | Count        | 1, 2, 3, ... 21543639                    |
+
+               
 
 \newpage
 
 # Exploratory Analysis 
+
 
 
 
